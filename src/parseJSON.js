@@ -4,21 +4,20 @@
 // but you're not, so you'll write it from scratch:
 var parseJSON = function(json) {
   // [{"x":[10,null,null,null]},3,"false",false]
-
   if (json === "null") {
     return null;
   } else if (json === "true") {
     return true;
   } else if (json === "false") {
     return false;
-  } else if(json[0] === '"'){
-    return json.slice(1, json.length - 1);
-  } else if(json[0] === '[') {
+  } else if (json[0] === '"') {
+    return parseString(json, 0);
+  } else if (json[0] === '[') {
     var result = [];
     var currentIndex = 1;
     while(currentIndex < json.length - 1) {
       var nextElement = findNextElement(json, currentIndex);
-      result.push(parseJSON(nextElement));
+      result.push(parseJSON(nextElement.trim()));
       currentIndex += nextElement.length;
     }
     return result;
@@ -26,26 +25,29 @@ var parseJSON = function(json) {
     var result = {};
     var currentIndex = 1;
     while(currentIndex < json.length - 1) {
-      var nextElement = findNextElement(json, currentIndex);
-      result.push(parseJSON(nextElement));
-      currentIndex += nextElement.length;
+      var prop = parseString(json, currentIndex);
+      currentIndex += prop.length + 3; //accounts for ':'
+      var value = findNextElement(json, currentIndex);
+      result[prop] = parseJSON(value.trim());
+      currentIndex += value.length;
     }
     return result;
   } else {
-    //return parseFloat(json);
+    return parseFloat(json);
   }
 };
+
 var findNextElement = function(json, start) {
   var openBrackets = 0;
   var i = start;
   while(true){
     var char = json[i];
-    if (char === '{' || char === '[') {
+    if (openBrackets === 0 && (char === ',' || char === ']' || char === '}')) {
+      break;
+    } else if (char === '{' || char === '[') {
       openBrackets++;  
     } else if (char === '}' || char === ']') {
       openBrackets--;  
-    } else if (openBrackets === 0 && (char === ',' || char === ']' || char === '}')) {
-      break;
     }
     i++;
   }
