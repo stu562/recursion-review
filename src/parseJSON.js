@@ -13,12 +13,13 @@ var parseJSON = function(json) {
   } else if (json[0] === '"') {
     return parseString(json, 0);
   } else if (json[0] === '[') {
+  // check this section
     var result = [];
     var currentIndex = 1;
     while(currentIndex < json.length - 1) {
       var nextElement = findNextElement(json, currentIndex);
       result.push(parseJSON(nextElement.trim()));
-      currentIndex += nextElement.length;
+      currentIndex += nextElement.length + 1;
     }
     return result;
   } else if(json[0] === '{') {
@@ -61,15 +62,19 @@ var parseString = function(json, start) {
   var escapeChars = ["/", "b", "f", "n", "r", "t"];
   while(true){
     var char = json[i];
-    if (char === "\\" && !prevBackslash) {
+    if (char === "\\" && (!prevBackslash || prevDoubleBackslash)) {
       prevBackslash = true;
+      prevDoubleBackslash = false;
     } else if (char === "\\" && prevBackslash) {
-      prevDoubleBackslash = true; 
+      prevDoubleBackslash = true;
+      prevBackslash = false; 
     } else if (prevBackslash && escapeChars.includes(char)) {
       throw new SyntaxError();
-    } else if (prevDoubleBackslash && !escapeChars.includes(char)) {
+    } else if (prevDoubleBackslash && !escapeChars.includes(char) && char !== '\\') {
       throw new SyntaxError();
-    } else if (char === '"' && !prevDoubleBackslash) {
+    } else if (prevDoubleBackslash && (escapeChars.includes(char) || char === '"')){
+      prevDoubleBackslash = false;
+    }else if (char === '"' && !prevDoubleBackslash) {
       return json.slice(start + 1, i);
     }
     i++;
